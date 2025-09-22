@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
   <meta charset="utf-8" />
-  <title>Ladestationen‑Karte</title>
+  <title>Ladestationen-Karte</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <style>
@@ -38,16 +38,18 @@
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 <script>
+// ===== Übersetzungen =====
 const translations = {
-  de: { title: "Ladestationen‑Karte", searchPlaceholder: "Suche nach Name oder Ort...", locateBtn: "📍 Mein Standort", routeLink: "📍 Route mit Google Maps", userLocation: "📍 Dein Standort", address: "Adresse" },
+  de: { title: "Ladestationen-Karte", searchPlaceholder: "Suche nach Name oder Ort...", locateBtn: "📍 Mein Standort", routeLink: "📍 Route mit Google Maps", userLocation: "📍 Dein Standort", address: "Adresse" },
   fr: { title: "Carte des bornes de recharge", searchPlaceholder: "Rechercher par nom ou lieu...", locateBtn: "📍 Ma position", routeLink: "📍 Itinéraire avec Google Maps", userLocation: "📍 Votre position", address: "Adresse" },
   it: { title: "Mappa delle colonnine", searchPlaceholder: "Cerca per nome o luogo...", locateBtn: "📍 La mia posizione", routeLink: "📍 Percorso con Google Maps", userLocation: "📍 La tua posizione", address: "Indirizzo" }
 };
 let currentLang = 'de';
 function setLanguage(lang){ currentLang=lang; document.getElementById('searchInput').placeholder=translations[lang].searchPlaceholder; document.getElementById('locateBtn').innerText=translations[lang].locateBtn; document.title=translations[lang].title; updatePopups(); }
 
+// ===== Karte mit Hybrid Layer =====
 let map=L.map('map').setView([46.8,8.3],8);
-L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',{
+L.tileLayer('https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}',{
   maxZoom:20,
   subdomains:['mt0','mt1','mt2','mt3'],
   attribution:'© Google'
@@ -55,6 +57,7 @@ L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',{
 
 let allMarkers=[], userMarker=null, routeLine=null;
 
+// ===== CSV laden =====
 async function loadCSV(){
   const res=await fetch('Google_Maps_Liste.csv');
   const text=await res.text();
@@ -74,6 +77,7 @@ async function loadCSV(){
   return items;
 }
 
+// ===== Marker =====
 function buildMarkers(data){
   allMarkers.forEach(m=>map.removeLayer(m));
   allMarkers=[];
@@ -82,7 +86,7 @@ function buildMarkers(data){
     marker._data=item; allMarkers.push(marker);
   });
   updatePopups();
-  if(allMarkers.length){ map.fitBounds(allMarkers.map(m=>m.getLatLng()).map(ll=>[ll.lat,ll.lng]).pad); }
+  if(allMarkers.length){ map.fitBounds(allMarkers.map(m=>m.getLatLng())); }
 }
 
 function updatePopups(){
@@ -95,6 +99,7 @@ function updatePopups(){
 
 function getDistance(lat1,lon1,lat2,lon2){ const R=6371; const toRad=x=>x*Math.PI/180; const dLat=toRad(lat2-lat1),dLon=toRad(lon2-lon1); const a=Math.sin(dLat/2)**2+Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2; return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a)); }
 
+// Suche
 document.getElementById('searchInput').addEventListener('input',e=>{
   const query=e.target.value.toLowerCase();
   allMarkers.forEach(marker=>{
@@ -105,6 +110,7 @@ document.getElementById('searchInput').addEventListener('input',e=>{
   });
 });
 
+// Standort + nächste Station
 document.getElementById('locateBtn').addEventListener('click',()=>{
   if(!navigator.geolocation){ alert("GPS wird von deinem Gerät nicht unterstützt."); return; }
   navigator.geolocation.getCurrentPosition(pos=>{
@@ -120,6 +126,7 @@ document.getElementById('locateBtn').addEventListener('click',()=>{
   },()=>{ alert("Standort konnte nicht ermittelt werden."); });
 });
 
+// Start
 (async function init(){ const data=await loadCSV(); buildMarkers(data); setLanguage(currentLang); })();
 </script>
 </body>
